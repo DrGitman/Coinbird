@@ -1,4 +1,4 @@
-# 🌿 Coinbird — The Botanical Ledger
+# 🌿 Coinbird — The Budgeting App
 
 A full-stack personal budgeting web app.
 
