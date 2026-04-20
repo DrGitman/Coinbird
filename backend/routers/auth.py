@@ -32,6 +32,10 @@ class UserLogin(BaseModel):
     email: EmailStr
     password: str = Field(..., min_length=1)
 
+class PasswordChange(BaseModel):
+    old_password: str
+    new_password: str = Field(..., min_length=6)
+
 @router.post("/register", status_code=status.HTTP_201_CREATED)
 async def register(user: UserRegister, db: asyncpg.Connection = Depends(get_db_connection)):
     try:
@@ -103,4 +107,34 @@ async def get_me(current_user: dict = Depends(get_current_user), db: asyncpg.Con
         raise
     except Exception as e:
         print("Get me error:", e)
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Server error.")
+
+@router.put("/change-password")
+async def change_password(
+    data: PasswordChange,
+    current_user: dict = Depends(get_current_user),
+    db: asyncpg.Connection = Depends(get_db_connection)
+):
+    try:
+        user_id = current_user["id"]
+        # Fetch current hash
+        user_record = await db.fetchrow("SELECT password_hash FROM users WHERE id = $1", user_id)
+        if not user_record:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found.")
+        
+        # Verify old password
+        if not verify_password(data.old_password, user_record["password_hash"]):
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Current password incorrect.")
+        
+        # Hash new password
+        new_hash = get_password_hash(data.new_password)
+        
+        # Update
+        await db.execute("UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2", new_hash, user_id)
+        
+        return {"message": "Password updated successfully."}
+    except HTTPException:
+        raise
+    except Exception as e:
+        print("Change password error:", e)
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Server error.")

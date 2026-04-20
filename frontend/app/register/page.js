@@ -103,7 +103,7 @@ export default function RegisterPage() {
                     value={form.password} onChange={e => set('password', e.target.value)} required minLength={6}
                     style={{ width: '100%', background: '#edf4e0', border: 'none', borderRadius: 12, padding: '14px', paddingRight: '46px', fontSize: 15, color: '#3d522f', outline: 'none' }}
                   />
-                  <button type="button" onClick={() => setShowPassword(!showPassword)}
+                  <button suppressHydrationWarning type="button" onClick={() => setShowPassword(!showPassword)}
                     style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#687e5b', cursor: 'pointer', display: 'flex' }}>
                     {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
@@ -119,7 +119,7 @@ export default function RegisterPage() {
                   value={form.confirm} onChange={e => set('confirm', e.target.value)} required minLength={6}
                   style={{ width: '100%', background: '#edf4e0', border: 'none', borderRadius: 12, padding: '14px', paddingRight: '46px', fontSize: 15, color: '#3d522f', outline: 'none' }}
                 />
-                  <button type="button" onClick={() => setShowConfirm(!showConfirm)}
+                  <button suppressHydrationWarning type="button" onClick={() => setShowConfirm(!showConfirm)}
                     style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#687e5b', cursor: 'pointer', display: 'flex' }}>
                     {showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
@@ -128,6 +128,7 @@ export default function RegisterPage() {
             </div>
 
             <button 
+              suppressHydrationWarning
               type="submit" 
               disabled={loading}
               style={{ 
@@ -144,7 +145,7 @@ export default function RegisterPage() {
 
           <p style={{ textAlign: 'center', marginTop: 24, fontSize: 14, color: '#687e5b' }}>
             Already part of the garden? 
-            <button onClick={() => router.push('/login')}
+            <button suppressHydrationWarning onClick={() => router.push('/login')}
               style={{ color: '#355627', fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer', marginLeft: 4 }}>
               Sign In
             </button>

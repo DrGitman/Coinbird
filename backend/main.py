@@ -3,9 +3,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from core.config import settings
 from db.database import close_db_pool
 
-from routers import auth, budget, categories, transactions, users
+from fastapi.staticfiles import StaticFiles
+from routers import auth, budget, categories, notifications, transactions, users
 
-app = FastAPI(title="Coinbird Botanical Ledger API")
+app = FastAPI(title="Coinbird Budget Planner API")
 
 # Setup CORS
 app.add_middleware(
@@ -22,6 +23,10 @@ app.include_router(budget.router)
 app.include_router(categories.router)
 app.include_router(transactions.router)
 app.include_router(users.router)
+app.include_router(notifications.router)
+
+# Mount static files
+app.mount("/static", StaticFiles(directory="backend/static"), name="static")
 
 @app.on_event("shutdown")
 async def shutdown_event():

@@ -1,8 +1,9 @@
 'use client';
-import { Sprout } from 'lucide-react';
+import { Sprout, BarChart2, PieChart as PieChartIcon } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import AppShell from '../../components/layout/AppShell';
-import { api, formatCurrency, getCategoryEmoji } from '../../lib/api';
+import { api, formatCurrency } from '../../lib/api';
+import CategoryIcon from '../../components/ui/CategoryIcon';
 import { useAuth } from '../../lib/AuthContext';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
@@ -105,7 +106,7 @@ export default function ReportsPage() {
               <h3 style={{ fontFamily: 'DM Serif Display, serif', fontSize: 18, marginBottom: 20 }}>Spending Habitat</h3>
               {cats.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-muted)' }}>
-                  <p style={{ fontSize: 28, marginBottom: 8 }}>🥧</p>
+                  <p style={{ marginBottom: 8, display: 'flex', justifyContent: 'center' }}><PieChartIcon size={28}/></p>
                   <p>No expense data yet</p>
                 </div>
               ) : (
@@ -133,7 +134,7 @@ export default function ReportsPage() {
                   const pct = expenses > 0 ? (parseFloat(c.total) / expenses) * 100 : 0;
                   return (
                     <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                      <span style={{ fontSize: 22, width: 32, textAlign: 'center' }}>{getCategoryEmoji(c.icon)}</span>
+                      <span style={{ width: 32, display: 'flex', justifyContent: 'center', color: 'var(--text-muted)' }}><CategoryIcon name={c.icon} size={22} /></span>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
                           <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{c.name || 'Other'}</span>

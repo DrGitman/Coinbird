@@ -2,8 +2,8 @@ import './globals.css';
 import { AuthProvider } from '../lib/AuthContext';
 
 export const metadata = {
-  title: 'Coinbird — The Botanical Ledger',
-  description: 'A beautiful personal finance app inspired by natural growth.',
+  title: 'Coinbird — The Budget Planner',
+  description: 'A beautiful personal finance app for smart budgeting and financial growth.',
 };
 
 export default function RootLayout({ children }) {

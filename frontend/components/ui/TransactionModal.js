@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { api, getCategoryEmoji } from '../../lib/api';
+import { api } from '../../lib/api';
+import { Sprout, X, TrendingUp, TrendingDown, Check } from 'lucide-react';
 
 export default function TransactionModal({ onClose, onSave, editData }) {
   const today = new Date().toISOString().split('T')[0];
@@ -65,7 +66,9 @@ export default function TransactionModal({ onClose, onSave, editData }) {
           <h2 style={{ fontFamily: 'DM Serif Display, serif', fontSize: 22, color: 'var(--text-primary)' }}>
             {editData ? 'Edit Entry' : 'New Entry'}
           </h2>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 20, color: 'var(--text-muted)', lineHeight: 1 }}>×</button>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', color: 'var(--text-muted)' }}>
+            <X size={20} />
+          </button>
         </div>
 
         {/* Type toggle */}
@@ -77,8 +80,10 @@ export default function TransactionModal({ onClose, onSave, editData }) {
                 fontWeight: 600, fontSize: 13, transition: 'all 0.15s',
                 background: form.type === t ? (t === 'expense' ? 'var(--danger)' : 'var(--accent)') : 'transparent',
                 color: form.type === t ? 'white' : 'var(--text-muted)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6
               }}>
-              {t === 'expense' ? '↓ Expense' : '↑ Income'}
+              {t === 'expense' ? <TrendingDown size={14} /> : <TrendingUp size={14} />}
+              {t === 'expense' ? 'Expense' : 'Income'}
             </button>
           ))}
         </div>
@@ -108,7 +113,7 @@ export default function TransactionModal({ onClose, onSave, editData }) {
               <option value="">— Select Category —</option>
               {categories.map(c => (
                 <option key={c.id} value={c.id}>
-                  {getCategoryEmoji(c.icon)} {c.name}
+                  {c.name}
                 </option>
               ))}
             </select>
@@ -140,8 +145,9 @@ export default function TransactionModal({ onClose, onSave, editData }) {
             <button type="button" className="btn-ghost" style={{ flex: 1, justifyContent: 'center' }} onClick={onClose}>
               Cancel
             </button>
-            <button type="submit" className="btn-primary" style={{ flex: 1, justifyContent: 'center' }} disabled={loading}>
-              {loading ? '🌱 Saving…' : editData ? '✓ Update' : '+ Add Entry'}
+            <button type="submit" className="btn-primary" style={{ flex: 1, justifyContent: 'center', gap: 6 }} disabled={loading}>
+              {loading ? <Sprout size={16} className="animate-pulse" /> : editData ? <Check size={16} /> : null}
+              {loading ? 'Saving…' : editData ? 'Update' : 'Add Entry'}
             </button>
           </div>
         </form>

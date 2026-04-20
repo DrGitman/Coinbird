@@ -74,7 +74,7 @@ export default function LoginPage() {
             <div>
               <div className="flex justify-between items-center mb-1">
                 <label style={{ fontSize: 11, fontWeight: 700, color: '#687e5b', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Password</label>
-                <button type="button" style={{ fontSize: 11, fontWeight: 700, color: '#687e5b', textTransform: 'uppercase', letterSpacing: '0.08em', background: 'none' }}>Forgot Password?</button>
+                <button suppressHydrationWarning type="button" style={{ fontSize: 11, fontWeight: 700, color: '#687e5b', textTransform: 'uppercase', letterSpacing: '0.08em', background: 'none' }}>Forgot Password?</button>
               </div>
                 <div className="relative">
                   <input 
@@ -84,7 +84,7 @@ export default function LoginPage() {
                     value={form.password} onChange={e => set('password', e.target.value)} required minLength={6}
                     style={{ width: '100%', background: '#edf4e0', border: 'none', borderRadius: 12, padding: '14px', paddingRight: '46px', fontSize: 15, color: '#3d522f', outline: 'none' }}
                   />
-                <button type="button" onClick={() => setShowPassword(!showPassword)}
+                <button suppressHydrationWarning type="button" onClick={() => setShowPassword(!showPassword)}
                   style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#687e5b', cursor: 'pointer', display: 'flex' }}>
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
@@ -92,6 +92,7 @@ export default function LoginPage() {
             </div>
 
             <button 
+              suppressHydrationWarning
               type="submit" 
               disabled={loading}
               style={{ 
@@ -108,7 +109,7 @@ export default function LoginPage() {
 
           <p style={{ textAlign: 'center', marginTop: 24, fontSize: 14, color: '#687e5b' }}>
             New to the nest? 
-            <button onClick={() => router.push('/register')}
+            <button suppressHydrationWarning onClick={() => router.push('/register')}
               style={{ color: '#355627', fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer', marginLeft: 4 }}>
               Create an account
             </button>

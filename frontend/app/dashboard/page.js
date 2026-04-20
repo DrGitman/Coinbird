@@ -1,8 +1,9 @@
 'use client';
-import { Sprout } from 'lucide-react';
+import { Sprout, TrendingUp, TrendingDown, LayoutGrid } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import AppShell from '../../components/layout/AppShell';
-import { api, formatCurrency, formatDate, getCategoryEmoji } from '../../lib/api';
+import { api, formatCurrency, formatDate } from '../../lib/api';
+import CategoryIcon from '../../components/ui/CategoryIcon';
 import { useAuth } from '../../lib/AuthContext';
 import TransactionModal from '../../components/ui/TransactionModal';
 
@@ -73,7 +74,11 @@ export default function DashboardPage() {
             {statCard('Total Balance', formatCurrency(balance, cur), 'All-time net worth')}
             {statCard('Monthly Income', formatCurrency(income, cur), `${month}/${year}`, 'var(--income-color)')}
             {statCard('Monthly Expenses', formatCurrency(expenses, cur), `${month}/${year}`, 'var(--expense-color)')}
-            {statCard('Net Flow', formatCurrency(income - expenses, cur), income - expenses >= 0 ? '↑ Positive' : '↓ Negative',
+            {statCard('Net Flow', formatCurrency(income - expenses, cur), 
+              <span className="flex items-center gap-1">
+                {income - expenses >= 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+                {income - expenses >= 0 ? 'Positive' : 'Negative'}
+              </span>,
               income - expenses >= 0 ? 'var(--income-color)' : 'var(--expense-color)')}
           </div>
 
@@ -101,8 +106,8 @@ export default function DashboardPage() {
                       onMouseEnter={e => e.currentTarget.style.background = 'var(--accent-light)'}
                       onMouseLeave={e => e.currentTarget.style.background = ''}
                     >
-                      <div className="cat-icon" style={{ width: 40, height: 40 }}>
-                        <span style={{ fontSize: 18 }}>{getCategoryEmoji(t.category_icon)}</span>
+                      <div className="cat-icon" style={{ width: 40, height: 40, color: 'var(--text-muted)' }}>
+                        <CategoryIcon name={t.category_icon} size={20} />
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <p style={{ fontWeight: 600, fontSize: 14, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -130,7 +135,7 @@ export default function DashboardPage() {
 
               {budgets.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '30px 0', color: 'var(--text-muted)', fontSize: 13 }}>
-                  <p style={{ fontSize: 28, marginBottom: 8 }}>🪴</p>
+                  <p style={{ marginBottom: 12, display: 'flex', justifyContent: 'center' }}><LayoutGrid size={32}/></p>
                   <p>No budgets set yet.</p>
                   <a href="/budget" style={{ color: 'var(--accent)', fontWeight: 600, textDecoration: 'none' }}>Set a budget →</a>
                 </div>
@@ -170,7 +175,7 @@ export default function DashboardPage() {
                     flex: '1 1 140px', padding: '14px 16px', borderRadius: 12,
                     background: 'var(--bg-primary)', border: '1px solid var(--border)',
                   }}>
-                    <div style={{ fontSize: 22, marginBottom: 8 }}>{getCategoryEmoji(cat.icon)}</div>
+                    <div style={{ marginBottom: 8, color: 'var(--text-muted)' }}><CategoryIcon name={cat.icon} size={22} /></div>
                     <p style={{ fontWeight: 600, fontSize: 13, color: 'var(--text-primary)' }}>{cat.name || 'Other'}</p>
                     <p style={{ fontSize: 15, fontWeight: 700, color: 'var(--expense-color)', marginTop: 2 }}>{formatCurrency(cat.total, cur)}</p>
                   </div>

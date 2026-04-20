@@ -3,8 +3,10 @@ import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import AppShell from '../../components/layout/AppShell';
 import TransactionModal from '../../components/ui/TransactionModal';
-import { api, formatCurrency, formatDate, getCategoryEmoji } from '../../lib/api';
+import { api, formatCurrency, formatDate } from '../../lib/api';
+import CategoryIcon from '../../components/ui/CategoryIcon';
 import { useAuth } from '../../lib/AuthContext';
+import { Sprout, Trash2, Edit3, Filter } from 'lucide-react';
 
 export default function TransactionsPage() {
   const { user } = useAuth();
@@ -126,10 +128,13 @@ export default function TransactionsPage() {
 
       {/* Transaction list */}
       {loading ? (
-        <div style={{ textAlign: 'center', padding: 60, color: 'var(--text-muted)' }}>🌱 Loading…</div>
+        <div style={{ textAlign: 'center', padding: 60, color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+          <Sprout size={32} className="animate-pulse" />
+          <span>Growing your history…</span>
+        </div>
       ) : transactions.length === 0 ? (
-        <div className="card" style={{ textAlign: 'center', padding: 60 }}>
-          <p style={{ fontSize: 40, marginBottom: 12 }}>🌱</p>
+        <div className="card" style={{ textAlign: 'center', padding: 60, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+          <Filter size={40} style={{ color: 'var(--text-muted)', opacity: 0.5 }} />
           <p style={{ color: 'var(--text-muted)', marginBottom: 16 }}>No transactions found. Start tracking your spending!</p>
           <button className="btn-primary" onClick={() => setShowModal(true)}>+ Add First Entry</button>
         </div>
@@ -151,8 +156,8 @@ export default function TransactionsPage() {
                     onMouseEnter={e => e.currentTarget.style.background = 'var(--accent-light)'}
                     onMouseLeave={e => e.currentTarget.style.background = ''}
                   >
-                    <div className="cat-icon">
-                      <span style={{ fontSize: 18 }}>{getCategoryEmoji(t.category_icon)}</span>
+                    <div className="cat-icon" style={{ color: 'var(--text-muted)' }}>
+                      <CategoryIcon name={t.category_icon} size={20} />
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <p style={{ fontWeight: 600, fontSize: 14, color: 'var(--text-primary)' }}>
@@ -168,12 +173,12 @@ export default function TransactionsPage() {
                     </span>
                     <div style={{ display: 'flex', gap: 6 }}>
                       <button onClick={() => setEditItem(t)}
-                        style={{ background: 'var(--accent-light)', border: 'none', borderRadius: 8, padding: '6px 10px', cursor: 'pointer', fontSize: 13, color: 'var(--accent)' }}>
-                        Edit
+                        style={{ background: 'var(--accent-light)', border: 'none', borderRadius: 8, padding: '7px', cursor: 'pointer', color: 'var(--accent)', display: 'flex' }}>
+                        <Edit3 size={15} />
                       </button>
                       <button onClick={() => setDeleteId(t.id)}
-                        style={{ background: 'var(--danger-light)', border: 'none', borderRadius: 8, padding: '6px 10px', cursor: 'pointer', fontSize: 13, color: 'var(--danger)' }}>
-                        ✕
+                        style={{ background: 'var(--danger-light)', border: 'none', borderRadius: 8, padding: '7px', cursor: 'pointer', color: 'var(--danger)', display: 'flex' }}>
+                        <Trash2 size={15} />
                       </button>
                     </div>
                   </div>

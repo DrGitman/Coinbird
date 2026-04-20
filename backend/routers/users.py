@@ -16,6 +16,8 @@ class UserSettingsUpdate(BaseModel):
     currency: Optional[str] = None
     timezone: Optional[str] = None
     theme: Optional[str] = None
+    notif_email: Optional[bool] = None
+    notif_budget_alerts: Optional[bool] = None
 
 class SavingsGoalCreateUpdate(BaseModel):
     name: str
@@ -58,10 +60,13 @@ async def update_settings(
               currency = COALESCE($1, currency), 
               timezone = COALESCE($2, timezone), 
               theme = COALESCE($3, theme),
+              notif_email = COALESCE($4, notif_email),
+              notif_budget_alerts = COALESCE($5, notif_budget_alerts),
               updated_at = NOW()
-            WHERE id = $4 RETURNING id, name, email, currency, timezone, theme
+            WHERE id = $6 RETURNING id, name, email, currency, timezone, theme, notif_email, notif_budget_alerts
             """,
-            settings.currency, settings.timezone, settings.theme, current_user["id"]
+            settings.currency, settings.timezone, settings.theme, 
+            settings.notif_email, settings.notif_budget_alerts, current_user["id"]
         )
         return dict(record)
     except Exception as e:
@@ -144,3 +149,42 @@ async def delete_savings_goal(
     except Exception as e:
         print("Delete goal error:", e)
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Server error.")
+
+from fastapi import File, UploadFile
+import os
+import uuid
+
+@router.post("/avatar")
+async def upload_avatar(
+    file: UploadFile = File(...),
+    current_user: dict = Depends(get_current_user),
+    db: asyncpg.Connection = Depends(get_db_connection)
+):
+    try:
+        # Validate file type
+        if not file.content_type.startswith("image/"):
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="File must be an image.")
+        
+        # Create unique filename
+        ext = os.path.splitext(file.filename)[1]
+        filename = f"{uuid.uuid4()}{ext}"
+        save_path = os.path.join("backend", "static", "avatars", filename)
+        
+        # Ensure directories exist
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+        
+        # Save file
+        with open(save_path, "wb") as buffer:
+            buffer.write(await file.read())
+            
+        # Update user record
+        # Note: We return the relative URL for the frontend
+        avatar_url = f"/static/avatars/{filename}"
+        await db.execute("UPDATE users SET avatar_url = $1, updated_at = NOW() WHERE id = $2", avatar_url, current_user["id"])
+        
+        return {"avatar_url": avatar_url}
+    except HTTPException:
+        raise
+    except Exception as e:
+        print("Avatar upload error:", e)
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Server error during upload.")

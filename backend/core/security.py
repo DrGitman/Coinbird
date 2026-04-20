@@ -8,17 +8,24 @@ from core.config import settings
 from db.database import get_db_connection
 import asyncpg
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login") # Using auth/login if we used oauth format, but we use a custom JSON body login. We will override later if needed.
+import bcrypt
 
-# Note: The Node backend used standard Bearer token in headers. 
-# FastAPI's OAuth2PasswordBearer expects a form data post to the tokenUrl, but we will use it just for extracting the token from the header for simplicity.
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login") 
 
 def get_password_hash(password: str) -> str:
-    return pwd_context.hash(password)
+    # bcrypt requires bytes, so we encode the password string
+    salt = bcrypt.gensalt()
+    hashed = bcrypt.hashpw(password.encode('utf-8'), salt)
+    return hashed.decode('utf-8')
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return pwd_context.verify(plain_password, hashed_password)
+    try:
+        return bcrypt.checkpw(
+            plain_password.encode('utf-8'), 
+            hashed_password.encode('utf-8')
+        )
+    except Exception:
+        return False
 
 def create_access_token(subject: Union[str, Any], expires_delta: timedelta = None) -> str:
     if expires_delta:

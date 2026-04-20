@@ -3,6 +3,7 @@ import { useState } from 'react';
 import AppShell from '../../components/layout/AppShell';
 import { api } from '../../lib/api';
 import { useAuth } from '../../lib/AuthContext';
+import { Sun, Moon, Check, Bell, Globe, Palette, ShieldAlert, Laptop, Mail, Zap } from 'lucide-react';
 
 export default function SettingsPage() {
   const { user, updateUser, logout } = useAuth();
@@ -10,6 +11,8 @@ export default function SettingsPage() {
     currency: user?.currency || 'USD',
     timezone: user?.timezone || 'UTC',
     theme: user?.theme || 'light',
+    notif_email: user?.notif_email !== undefined ? user.notif_email : true,
+    notif_budget_alerts: user?.notif_budget_alerts !== undefined ? user.notif_budget_alerts : true,
   });
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -51,70 +54,75 @@ export default function SettingsPage() {
     'Asia/Tokyo', 'Asia/Shanghai', 'Asia/Kolkata', 'Australia/Sydney', 'Africa/Windhoek',
   ];
 
-  const sectionStyle = { marginBottom: 28 };
-  const sectionLabelStyle = { fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 12 };
-
   return (
-    <AppShell title="Settings">
-      <div style={{ maxWidth: 640 }}>
-        <p style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>Preferences</p>
+    <AppShell title="Application Settings">
+      <div style={{ maxWidth: 1000, margin: '0 auto' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 24 }}>
+          <div>
+            <p style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>Configuration</p>
+            <h2 style={{ fontFamily: 'DM Serif Display, serif', fontSize: 28, color: 'var(--text-primary)' }}>Preferences</h2>
+          </div>
+          <button className="btn-primary" onClick={handleSave} disabled={saving} style={{ minWidth: 160, justifyContent: 'center', gap: 8 }}>
+            {saving ? <Zap size={18} className="animate-pulse" /> : <Check size={18} />}
+            {saving ? 'Saving...' : 'Save Settings'}
+          </button>
+        </div>
 
-        {error && <div style={{ background: 'var(--danger-light)', color: 'var(--danger)', borderRadius: 10, padding: '10px 14px', fontSize: 13, marginBottom: 20 }}>{error}</div>}
-        {success && <div style={{ background: 'var(--accent-light)', color: 'var(--income-color)', borderRadius: 10, padding: '10px 14px', fontSize: 13, marginBottom: 20 }}>✓ Settings saved!</div>}
+        {error && <div style={{ background: 'var(--danger-light)', color: 'var(--danger)', borderRadius: 12, padding: '14px 18px', fontSize: 14, marginBottom: 24 }}>{error}</div>}
+        {success && (
+          <div style={{ background: 'var(--accent-light)', color: 'var(--income-color)', borderRadius: 12, padding: '14px 18px', fontSize: 14, marginBottom: 24, display: 'flex', alignItems: 'center', gap: 10 }}>
+            <Check size={18} />
+            Your settings have been successfully updated.
+          </div>
+        )}
 
-        {/* Appearance */}
-        <div className="card" style={{ padding: 28, marginBottom: 20 }}>
-          <div style={sectionStyle}>
-            <p style={sectionLabelStyle}>Visual — Appearance</p>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 24 }}>
+          {/* Appearance Section */}
+          <div className="card" style={{ padding: 32 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 24 }}>
+               <Palette size={20} style={{ color: 'var(--accent)' }} />
+               <h3 style={{ fontFamily: 'DM Serif Display, serif', fontSize: 20 }}>Visual Interface</h3>
+            </div>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               {[
-                { val: 'light', icon: '☀️', label: 'Light Theme', desc: 'Inspired by morning dew and fresh botanical growth.' },
-                { val: 'dark', icon: '🌙', label: 'Dark Theme', desc: 'A deep, calm environment for late-night budgeting.' },
+                { val: 'light', icon: <Sun size={20} />, label: 'Light Theme', desc: 'A clean and bright interface for daytime budgeting.' },
+                { val: 'dark', icon: <Moon size={20} />, label: 'Dark Theme', desc: 'A deep, high-contrast mode for focused financial reviews.' },
               ].map(t => (
                 <button key={t.val} onClick={() => set('theme', t.val)}
                   style={{
-                    padding: '16px 18px', borderRadius: 14, textAlign: 'left',
+                    padding: '18px', borderRadius: 16, textAlign: 'left',
                     border: `2px solid ${settings.theme === t.val ? 'var(--accent)' : 'var(--border)'}`,
                     background: settings.theme === t.val ? 'var(--accent-light)' : 'var(--bg-primary)',
-                    cursor: 'pointer', transition: 'all 0.15s',
+                    cursor: 'pointer', transition: 'all 0.15s', display: 'flex', gap: 16
                   }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                    <span style={{ fontSize: 24 }}>{t.icon}</span>
-                    <div style={{
-                      width: 18, height: 18, borderRadius: '50%',
-                      border: `2px solid ${settings.theme === t.val ? 'var(--accent)' : 'var(--border)'}`,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    }}>
-                      {settings.theme === t.val && <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--accent)' }} />}
-                    </div>
+                  <div style={{ color: settings.theme === t.val ? 'var(--accent)' : 'var(--text-muted)' }}>{t.icon}</div>
+                  <div style={{ flex: 1 }}>
+                    <p style={{ fontWeight: 600, fontSize: 14, color: 'var(--text-primary)', marginBottom: 2 }}>{t.label}</p>
+                    <p style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.4 }}>{t.desc}</p>
                   </div>
-                  <p style={{ fontWeight: 600, fontSize: 14, color: 'var(--text-primary)', marginBottom: 4 }}>{t.label}</p>
-                  <p style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.4 }}>{t.desc}</p>
+                  {settings.theme === t.val && <Check size={16} style={{ color: 'var(--accent)' }} />}
                 </button>
               ))}
             </div>
           </div>
-        </div>
 
-        {/* Localization */}
-        <div className="card" style={{ padding: 28, marginBottom: 20 }}>
-          <div style={sectionStyle}>
-            <p style={sectionLabelStyle}>Regional — Localization</p>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-              <div style={{ padding: '20px', borderRadius: 14, background: 'var(--accent-light)', border: '1px solid var(--border)' }}>
-                <p style={{ fontWeight: 700, fontSize: 15, color: 'var(--text-primary)', marginBottom: 6 }}>Primary Currency</p>
-                <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 14, lineHeight: 1.4 }}>
-                  Select how balances and growth indicators are calculated.
-                </p>
+          {/* Localization Section */}
+          <div className="card" style={{ padding: 32 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 24 }}>
+               <Globe size={20} style={{ color: 'var(--accent)' }} />
+               <h3 style={{ fontFamily: 'DM Serif Display, serif', fontSize: 20 }}>Regional & Local</h3>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+              <div>
+                <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Primary Currency</label>
                 <select className="input" value={settings.currency} onChange={e => set('currency', e.target.value)}>
                   {currencies.map(c => <option key={c.code} value={c.code}>{c.label}</option>)}
                 </select>
               </div>
-              <div style={{ padding: '20px', borderRadius: 14, background: 'var(--bg-primary)', border: '1px solid var(--border)' }}>
-                <p style={{ fontWeight: 700, fontSize: 15, color: 'var(--text-primary)', marginBottom: 6 }}>Timezone</p>
-                <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 14, lineHeight: 1.4 }}>
-                  Your local time for transaction dating.
-                </p>
+              <div>
+                <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>System Timezone</label>
                 <select className="input" value={settings.timezone} onChange={e => set('timezone', e.target.value)}>
                   {timezones.map(tz => <option key={tz} value={tz}>{tz.replace('_', ' ')}</option>)}
                 </select>
@@ -123,32 +131,68 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        {/* Save button */}
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 24 }}>
-          <button className="btn-primary" onClick={handleSave} disabled={saving} style={{ minWidth: 160, justifyContent: 'center' }}>
-            {saving ? '🌱 Saving…' : '✓ Save Settings'}
-          </button>
+        {/* Notifications Section */}
+        <div className="card" style={{ padding: 32, marginBottom: 24 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 24 }}>
+             <Bell size={20} style={{ color: 'var(--accent)' }} />
+             <h3 style={{ fontFamily: 'DM Serif Display, serif', fontSize: 20 }}>Notifications & Alerts</h3>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
+            <div style={{ display: 'flex', gap: 16, padding: '20px', borderRadius: 16, background: 'var(--bg-primary)', border: '1px solid var(--border)' }}>
+              <div style={{ width: 40, height: 40, borderRadius: 12, background: 'var(--accent-light)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Mail size={20} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <p style={{ fontWeight: 600, fontSize: 15, marginBottom: 2 }}>Email Summaries</p>
+                <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12 }}>Receive weekly reports and transaction digests.</p>
+                <label className="toggle">
+                  <input type="checkbox" checked={settings.notif_email} onChange={e => set('notif_email', e.target.checked)} />
+                  <span className="toggle-slider"></span>
+                </label>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: 16, padding: '20px', borderRadius: 16, background: 'var(--bg-primary)', border: '1px solid var(--border)' }}>
+              <div style={{ width: 40, height: 40, borderRadius: 12, background: 'var(--accent-light)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Bell size={20} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <p style={{ fontWeight: 600, fontSize: 15, marginBottom: 2 }}>Budget Thresholds</p>
+                <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12 }}>Get alerted when you exceed 90% of a budget.</p>
+                <label className="toggle">
+                  <input type="checkbox" checked={settings.notif_budget_alerts} onChange={e => set('notif_budget_alerts', e.target.checked)} />
+                  <span className="toggle-slider"></span>
+                </label>
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Danger zone */}
-        <div className="card" style={{ padding: 28, border: '1px solid #fee2e2' }}>
-          <h3 style={{ fontFamily: 'DM Serif Display, serif', fontSize: 18, color: 'var(--danger)', marginBottom: 8 }}>Account Management</h3>
-          <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 20, lineHeight: 1.6 }}>
-            Permanently remove all data, transactions, and botanical growth history. This action cannot be reversed.
+        {/* Danger Zone */}
+        <div className="card" style={{ padding: 32, border: '1px solid #fee2e2', background: 'rgba(239, 68, 68, 0.02)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+             <ShieldAlert size={20} style={{ color: 'var(--danger)' }} />
+             <h3 style={{ fontFamily: 'DM Serif Display, serif', fontSize: 20, color: 'var(--danger)' }}>Danger Zone</h3>
+          </div>
+          <p style={{ fontSize: 14, color: 'var(--text-muted)', marginBottom: 24, lineHeight: 1.6, maxWidth: 600 }}>
+            Permanently remove your account and all financial history from our secure servers. This operation is irreversible and all data will be lost immediately.
           </p>
-          <button className="btn-danger" onClick={() => setShowDeactivate(true)}>Deactivate Account</button>
+          <button className="btn-danger" onClick={() => setShowDeactivate(true)} style={{ fontWeight: 700 }}>
+            Permanently Deactivate Account
+          </button>
         </div>
 
         {showDeactivate && (
           <div className="modal-overlay">
             <div className="modal-box" style={{ maxWidth: 380 }}>
-              <h3 style={{ fontFamily: 'DM Serif Display, serif', fontSize: 20, marginBottom: 10 }}>Are you sure?</h3>
+              <h3 style={{ fontFamily: 'DM Serif Display, serif', fontSize: 20, marginBottom: 12 }}>Absolute Confirmation</h3>
               <p style={{ fontSize: 14, color: 'var(--text-muted)', marginBottom: 24, lineHeight: 1.6 }}>
-                This will permanently delete your account and all associated data. This cannot be undone.
+                Are you absolutely sure? This will wipe your entire financial presence on Coinbird. There is no recovery.
               </p>
               <div style={{ display: 'flex', gap: 12 }}>
                 <button className="btn-ghost" style={{ flex: 1, justifyContent: 'center' }} onClick={() => setShowDeactivate(false)}>Cancel</button>
-                <button className="btn-danger" style={{ flex: 1 }} onClick={() => { logout(); }}>Yes, Delete</button>
+                <button className="btn-danger" style={{ flex: 1 }} onClick={() => { logout(); }}>Yes, Delete Everything</button>
               </div>
             </div>
           </div>
@@ -157,4 +201,3 @@ export default function SettingsPage() {
     </AppShell>
   );
 }
-

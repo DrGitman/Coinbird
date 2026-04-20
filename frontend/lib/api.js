@@ -21,10 +21,28 @@ async function request(path, options = {}) {
   const data = await res.json();
 
   if (!res.ok) {
-    const msg = data?.error || data?.errors?.[0]?.msg || 'Something went wrong';
+    const msg = data?.detail || data?.error || data?.errors?.[0]?.msg || 'Something went wrong';
     throw new Error(msg);
   }
 
+  return data;
+}
+
+async function uploadFile(path, file) {
+  const token = getToken();
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const res = await fetch(`${API_URL}${path}`, {
+    method: 'POST',
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: formData,
+  });
+
+  const data = await res.json();
+  if (!res.ok) throw new Error(data?.detail || 'Upload failed');
   return data;
 }
 
@@ -35,6 +53,8 @@ export const api = {
   register: (name, email, password) =>
     request('/auth/register', { method: 'POST', body: JSON.stringify({ name, email, password }) }),
   me: () => request('/auth/me'),
+  changePassword: (data) =>
+    request('/auth/change-password', { method: 'PUT', body: JSON.stringify(data) }),
 
   // Transactions
   getTransactions: (params = {}) => {
@@ -74,6 +94,12 @@ export const api = {
     request('/users/profile', { method: 'PUT', body: JSON.stringify(data) }),
   updateSettings: (data) =>
     request('/users/settings', { method: 'PUT', body: JSON.stringify(data) }),
+  uploadAvatar: (file) => uploadFile('/users/avatar', file),
+
+  // Notifications
+  getNotifications: () => request('/notifications'),
+  markNotificationRead: (id) => request(`/notifications/${id}/read`, { method: 'PUT' }),
+  deleteNotification: (id) => request(`/notifications/${id}`, { method: 'DELETE' }),
   getSavingsGoals: () => request('/users/savings-goals'),
   createSavingsGoal: (data) =>
     request('/users/savings-goals', { method: 'POST', body: JSON.stringify(data) }),
@@ -92,7 +118,8 @@ export function formatCurrency(amount, currency = 'USD') {
 }
 
 export function formatDate(date) {
-  return new Date(date).toLocaleDateString('en-US', {
+  const d = new Date(date);
+  return d.toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
@@ -104,24 +131,3 @@ export function getCurrentMonthYear() {
   return { month: now.getMonth() + 1, year: now.getFullYear() };
 }
 
-export const CATEGORY_ICONS = {
-  'shopping-bag': '🛍️',
-  'home': '🏠',
-  'car': '🚗',
-  'gamepad-2': '🎮',
-  'heart-pulse': '💪',
-  'utensils': '🍽️',
-  'zap': '⚡',
-  'briefcase': '💼',
-  'stethoscope': '🏥',
-  'book-open': '📚',
-  'shopping-cart': '🛒',
-  'tag': '🏷️',
-  'plane': '✈️',
-  'music': '🎵',
-  'coffee': '☕',
-};
-
-export function getCategoryEmoji(icon) {
-  return CATEGORY_ICONS[icon] || '🏷️';
-}

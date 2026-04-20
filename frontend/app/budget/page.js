@@ -1,8 +1,10 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import AppShell from '../../components/layout/AppShell';
-import { api, formatCurrency, getCategoryEmoji } from '../../lib/api';
+import { api, formatCurrency } from '../../lib/api';
+import CategoryIcon from '../../components/ui/CategoryIcon';
 import { useAuth } from '../../lib/AuthContext';
+import { Sprout, LayoutGrid, X } from 'lucide-react';
 
 export default function BudgetPage() {
   const { user } = useAuth();
@@ -112,7 +114,9 @@ export default function BudgetPage() {
           <div className="modal-box" style={{ maxWidth: 420 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 20 }}>
               <h3 style={{ fontFamily: 'DM Serif Display, serif', fontSize: 20 }}>Plant New Category</h3>
-              <button onClick={() => setShowAdd(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 20, color: 'var(--text-muted)' }}>×</button>
+              <button onClick={() => setShowAdd(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', color: 'var(--text-muted)' }}>
+                <X size={20} />
+              </button>
             </div>
             {error && <div style={{ background: 'var(--danger-light)', color: 'var(--danger)', borderRadius: 8, padding: '8px 12px', fontSize: 13, marginBottom: 12 }}>{error}</div>}
             <form onSubmit={handleAdd} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -120,7 +124,7 @@ export default function BudgetPage() {
                 <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Category</label>
                 <select className="input" value={form.category_id} onChange={e => setForm(p => ({ ...p, category_id: e.target.value }))} required>
                   <option value="">— Select —</option>
-                  {availableCats.map(c => <option key={c.id} value={c.id}>{getCategoryEmoji(c.icon)} {c.name}</option>)}
+                  {availableCats.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
               </div>
               <div>
@@ -141,10 +145,13 @@ export default function BudgetPage() {
 
       {/* Budget cards */}
       {loading ? (
-        <div style={{ textAlign: 'center', padding: 60, color: 'var(--text-muted)' }}>🌱 Loading budgets…</div>
+        <div style={{ textAlign: 'center', padding: 60, color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+          <Sprout size={32} className="animate-pulse" />
+          <span>Growing your nurseries…</span>
+        </div>
       ) : budgets.length === 0 ? (
-        <div className="card" style={{ textAlign: 'center', padding: 60 }}>
-          <p style={{ fontSize: 40, marginBottom: 12 }}>🪴</p>
+        <div className="card" style={{ textAlign: 'center', padding: 60, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+          <LayoutGrid size={40} style={{ color: 'var(--text-muted)', opacity: 0.5 }} />
           <p style={{ color: 'var(--text-muted)', marginBottom: 20 }}>No budget nurseries planted yet for this period.</p>
           <button className="btn-primary" onClick={() => setShowAdd(true)}>+ Plant First Budget</button>
         </div>
@@ -159,8 +166,8 @@ export default function BudgetPage() {
             return (
               <div key={b.id} className="card" style={{ padding: 22 }}>
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16 }}>
-                  <div className="cat-icon" style={{ width: 48, height: 48, borderRadius: 14 }}>
-                    <span style={{ fontSize: 22 }}>{getCategoryEmoji(b.category_icon)}</span>
+                  <div className="cat-icon" style={{ width: 48, height: 48, borderRadius: 14, color: 'var(--text-muted)' }}>
+                    <CategoryIcon name={b.category_icon} size={24} />
                   </div>
                   <div style={{ textAlign: 'right' }}>
                     {over ? (
