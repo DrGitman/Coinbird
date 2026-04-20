@@ -17,11 +17,14 @@ async def seed_badges():
         ('first_entry', 'First Entry', 'Your first step into a larger financial world.', 'Zap', 'consistency'),
         ('7_day_tracker', '7-Day Tracker', 'Seven days of consistent transaction logging.', 'Calendar', 'consistency'),
         ('30_day_tracker', 'Consistency Champion', 'A full month of expense tracking mastery.', 'Award', 'consistency'),
+        ('first_full_month', 'First Month Completed', 'Completed your first full month of budgeting activity.', 'CalendarRange', 'consistency'),
         
         # Discipline
         ('first_budget', 'Planning Ahead', 'Your first monthly budget has been established.', 'Target', 'discipline'),
-        ('on_budget_month', 'Full Control', 'Stayed within your entire budget for a full month.', 'Shield', 'discipline'),
+        ('on_budget_month', 'On Budget', 'Stayed within budget for at least one tracked category.', 'ShieldCheck', 'discipline'),
+        ('full_control_month', 'Full Control', 'Stayed within all budgets for a full month.', 'Shield', 'discipline'),
         ('recovery_master', 'Recovery', 'Corrected an overspent category from the previous month.', 'TrendingUp', 'discipline'),
+        ('spending_improved', 'Spending Improved', 'Reduced your spending compared to the prior month.', 'TrendingDown', 'discipline'),
         
         # Awareness
         ('all_categories', 'Awareness Master', 'Tracked expenses in all major categories.', 'LayoutGrid', 'awareness'),
