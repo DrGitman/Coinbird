@@ -18,6 +18,13 @@ class UserSettingsUpdate(BaseModel):
     theme: Optional[str] = None
     notif_email: Optional[bool] = None
     notif_budget_alerts: Optional[bool] = None
+    notif_push: Optional[bool] = None
+    notif_budget_warning: Optional[bool] = None
+    notif_budget_exceeded: Optional[bool] = None
+    notif_overspending: Optional[bool] = None
+    notif_reminders: Optional[bool] = None
+    notif_monthly_summary: Optional[bool] = None
+    notif_milestones: Optional[bool] = None
 
 class SavingsGoalCreateUpdate(BaseModel):
     name: str
@@ -62,11 +69,24 @@ async def update_settings(
               theme = COALESCE($3, theme),
               notif_email = COALESCE($4, notif_email),
               notif_budget_alerts = COALESCE($5, notif_budget_alerts),
+              notif_push = COALESCE($6, notif_push),
+              notif_budget_warning = COALESCE($7, notif_budget_warning),
+              notif_budget_exceeded = COALESCE($8, notif_budget_exceeded),
+              notif_overspending = COALESCE($9, notif_overspending),
+              notif_reminders = COALESCE($10, notif_reminders),
+              notif_monthly_summary = COALESCE($11, notif_monthly_summary),
+              notif_milestones = COALESCE($12, notif_milestones),
               updated_at = NOW()
-            WHERE id = $6 RETURNING id, name, email, currency, timezone, theme, notif_email, notif_budget_alerts
+            WHERE id = $13 RETURNING id, name, email, currency, timezone, theme,
+              notif_email, notif_budget_alerts, notif_push, notif_budget_warning,
+              notif_budget_exceeded, notif_overspending, notif_reminders,
+              notif_monthly_summary, notif_milestones
             """,
             settings.currency, settings.timezone, settings.theme, 
-            settings.notif_email, settings.notif_budget_alerts, current_user["id"]
+            settings.notif_email, settings.notif_budget_alerts, settings.notif_push,
+            settings.notif_budget_warning, settings.notif_budget_exceeded,
+            settings.notif_overspending, settings.notif_reminders,
+            settings.notif_monthly_summary, settings.notif_milestones, current_user["id"]
         )
         return dict(record)
     except Exception as e:

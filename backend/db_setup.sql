@@ -35,6 +35,15 @@ CREATE TABLE IF NOT EXISTS users (
   currency VARCHAR(10) DEFAULT 'USD',
   timezone VARCHAR(50) DEFAULT 'UTC',
   theme VARCHAR(20) DEFAULT 'light',
+  notif_email BOOLEAN DEFAULT true,
+  notif_budget_alerts BOOLEAN DEFAULT true,
+  notif_push BOOLEAN DEFAULT false,
+  notif_budget_warning BOOLEAN DEFAULT true,
+  notif_budget_exceeded BOOLEAN DEFAULT true,
+  notif_overspending BOOLEAN DEFAULT true,
+  notif_reminders BOOLEAN DEFAULT true,
+  notif_monthly_summary BOOLEAN DEFAULT true,
+  notif_milestones BOOLEAN DEFAULT true,
   avatar_url TEXT,
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
@@ -145,6 +154,7 @@ CREATE TABLE IF NOT EXISTS notifications (
   type VARCHAR(100),
   title VARCHAR(150),
   message TEXT,
+  action_url TEXT,
   is_read BOOLEAN DEFAULT false,
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()

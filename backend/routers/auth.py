@@ -44,7 +44,10 @@ async def register(user: UserRegister, db: asyncpg.Connection = Depends(get_db_c
             """
             INSERT INTO users (name, email, password_hash) 
             VALUES ($1, $2, $3) 
-            RETURNING id, name, email, currency, theme
+            RETURNING id, name, email, currency, theme, timezone, notif_email,
+                      notif_budget_alerts, notif_push, notif_budget_warning,
+                      notif_budget_exceeded, notif_overspending, notif_reminders,
+                      notif_monthly_summary, notif_milestones
             """,
             user.name, user.email, password_hash
         )
@@ -95,7 +98,10 @@ async def get_me(current_user: dict = Depends(get_current_user), db: asyncpg.Con
         user_id = current_user["id"]
         result = await db.fetchrow(
             """
-            SELECT id, name, email, currency, timezone, theme, avatar_url, created_at 
+            SELECT id, name, email, currency, timezone, theme, avatar_url, created_at,
+                   notif_email, notif_budget_alerts, notif_push, notif_budget_warning,
+                   notif_budget_exceeded, notif_overspending, notif_reminders,
+                   notif_monthly_summary, notif_milestones
             FROM users WHERE id = $1
             """,
             user_id

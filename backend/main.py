@@ -2,7 +2,9 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from core.config import settings
-from db.database import close_db_pool
+from db.database import close_db_pool, get_db_pool
+from core.scheduler import start_scheduler, stop_scheduler
+from core.schema import ensure_schema_updates
 
 from fastapi.staticfiles import StaticFiles
 from routers import auth, budget, categories, notifications, transactions, users, milestones
@@ -35,7 +37,16 @@ app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
 @app.on_event("shutdown")
 async def shutdown_event():
+    await stop_scheduler()
     await close_db_pool()
+
+
+@app.on_event("startup")
+async def startup_event():
+    pool = await get_db_pool()
+    async with pool.acquire() as db:
+        await ensure_schema_updates(db)
+    start_scheduler()
 
 @app.get("/health", tags=["system"])
 async def health_check():

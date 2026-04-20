@@ -13,6 +13,13 @@ export default function SettingsPage() {
     theme: user?.theme || 'light',
     notif_email: user?.notif_email !== undefined ? user.notif_email : true,
     notif_budget_alerts: user?.notif_budget_alerts !== undefined ? user.notif_budget_alerts : true,
+    notif_push: user?.notif_push !== undefined ? user.notif_push : false,
+    notif_budget_warning: user?.notif_budget_warning !== undefined ? user.notif_budget_warning : true,
+    notif_budget_exceeded: user?.notif_budget_exceeded !== undefined ? user.notif_budget_exceeded : true,
+    notif_overspending: user?.notif_overspending !== undefined ? user.notif_overspending : true,
+    notif_reminders: user?.notif_reminders !== undefined ? user.notif_reminders : true,
+    notif_monthly_summary: user?.notif_monthly_summary !== undefined ? user.notif_monthly_summary : true,
+    notif_milestones: user?.notif_milestones !== undefined ? user.notif_milestones : true,
   });
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -159,7 +166,7 @@ export default function SettingsPage() {
               </div>
               <div style={{ flex: 1 }}>
                 <p style={{ fontWeight: 600, fontSize: 15, marginBottom: 2 }}>Budget Thresholds</p>
-                <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12 }}>Get alerted when you exceed 90% of a budget.</p>
+                <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12 }}>Keep your core budget alerts enabled.</p>
                 <label className="toggle">
                   <input type="checkbox" checked={settings.notif_budget_alerts} onChange={e => set('notif_budget_alerts', e.target.checked)} />
                   <span className="toggle-slider"></span>
@@ -184,6 +191,90 @@ export default function SettingsPage() {
                       window.dispatchEvent(new CustomEvent('coinbird-push-off'));
                     }
                   }} />
+                  <span className="toggle-slider"></span>
+                </label>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: 16, padding: '20px', borderRadius: 16, background: 'var(--bg-primary)', border: '1px solid var(--border)' }}>
+              <div style={{ width: 40, height: 40, borderRadius: 12, background: 'var(--accent-light)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Bell size={20} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <p style={{ fontWeight: 600, fontSize: 15, marginBottom: 2 }}>Budget Warnings</p>
+                <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12 }}>80% and 90% threshold notices before you go over.</p>
+                <label className="toggle">
+                  <input type="checkbox" checked={settings.notif_budget_warning} onChange={e => set('notif_budget_warning', e.target.checked)} />
+                  <span className="toggle-slider"></span>
+                </label>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: 16, padding: '20px', borderRadius: 16, background: 'var(--bg-primary)', border: '1px solid var(--border)' }}>
+              <div style={{ width: 40, height: 40, borderRadius: 12, background: 'var(--accent-light)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <ShieldAlert size={20} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <p style={{ fontWeight: 600, fontSize: 15, marginBottom: 2 }}>Budget Exceeded</p>
+                <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12 }}>Stronger alerts when a category goes over budget.</p>
+                <label className="toggle">
+                  <input type="checkbox" checked={settings.notif_budget_exceeded} onChange={e => set('notif_budget_exceeded', e.target.checked)} />
+                  <span className="toggle-slider"></span>
+                </label>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: 16, padding: '20px', borderRadius: 16, background: 'var(--bg-primary)', border: '1px solid var(--border)' }}>
+              <div style={{ width: 40, height: 40, borderRadius: 12, background: 'var(--accent-light)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Zap size={20} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <p style={{ fontWeight: 600, fontSize: 15, marginBottom: 2 }}>Overspending Signals</p>
+                <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12 }}>Alerts when spending trends rise faster than usual.</p>
+                <label className="toggle">
+                  <input type="checkbox" checked={settings.notif_overspending} onChange={e => set('notif_overspending', e.target.checked)} />
+                  <span className="toggle-slider"></span>
+                </label>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: 16, padding: '20px', borderRadius: 16, background: 'var(--bg-primary)', border: '1px solid var(--border)' }}>
+              <div style={{ width: 40, height: 40, borderRadius: 12, background: 'var(--accent-light)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Mail size={20} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <p style={{ fontWeight: 600, fontSize: 15, marginBottom: 2 }}>Reminders</p>
+                <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12 }}>Scheduled reminders to keep your expense logging on track.</p>
+                <label className="toggle">
+                  <input type="checkbox" checked={settings.notif_reminders} onChange={e => set('notif_reminders', e.target.checked)} />
+                  <span className="toggle-slider"></span>
+                </label>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: 16, padding: '20px', borderRadius: 16, background: 'var(--bg-primary)', border: '1px solid var(--border)' }}>
+              <div style={{ width: 40, height: 40, borderRadius: 12, background: 'var(--accent-light)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Check size={20} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <p style={{ fontWeight: 600, fontSize: 15, marginBottom: 2 }}>Monthly Summaries</p>
+                <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12 }}>End-of-period reflection notifications with budget outcomes.</p>
+                <label className="toggle">
+                  <input type="checkbox" checked={settings.notif_monthly_summary} onChange={e => set('notif_monthly_summary', e.target.checked)} />
+                  <span className="toggle-slider"></span>
+                </label>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: 16, padding: '20px', borderRadius: 16, background: 'var(--bg-primary)', border: '1px solid var(--border)' }}>
+              <div style={{ width: 40, height: 40, borderRadius: 12, background: 'var(--accent-light)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Check size={20} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <p style={{ fontWeight: 600, fontSize: 15, marginBottom: 2 }}>Milestones</p>
+                <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12 }}>Badge and achievement notifications when you earn them.</p>
+                <label className="toggle">
+                  <input type="checkbox" checked={settings.notif_milestones} onChange={e => set('notif_milestones', e.target.checked)} />
                   <span className="toggle-slider"></span>
                 </label>
               </div>

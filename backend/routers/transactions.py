@@ -19,6 +19,31 @@ class TransactionCreateUpdate(BaseModel):
     merchant: Optional[str] = None
     payment_method: Optional[str] = None
 
+
+async def create_user_notification_if_enabled(
+    db: asyncpg.Connection,
+    user_id: int,
+    setting_key: str,
+    notif_type: str,
+    title: str,
+    message: str,
+    action_url: Optional[str] = "/transactions",
+):
+    user_settings = await db.fetchrow(
+        f"SELECT COALESCE(notif_budget_alerts, true) AS notif_budget_alerts, COALESCE({setting_key}, true) AS feature_enabled FROM users WHERE id = $1",
+        user_id,
+    )
+    if not user_settings:
+        return
+
+    if setting_key.startswith('notif_budget') and not user_settings['notif_budget_alerts']:
+        return
+
+    if not user_settings['feature_enabled']:
+        return
+
+    await create_notification(db, user_id, notif_type, title, message, action_url=action_url)
+
 async def check_budget_thresholds(db: asyncpg.Connection, user_id: int, category_id: int, tx_date: date):
     if not category_id:
         return
@@ -52,38 +77,80 @@ async def check_budget_thresholds(db: asyncpg.Connection, user_id: int, category
     # 80% threshold
     if spent >= limit * 0.8 and spent < limit * 0.9:
         notif_type = f"budget_80_{category_id}_{month}_{year}"
-        existing = await db.fetchrow("SELECT id FROM notifications WHERE user_id = $1 AND type = $2", user_id, notif_type)
-        if not existing:
-            cat_name = await db.fetchval("SELECT name FROM categories WHERE id = $1", category_id)
-            await create_notification(
-                db, user_id, notif_type,
-                "Budget Awareness",
-                f"You've used 80% of your budget for {cat_name}. Looking good, stay mindful!"
-            )
+        cat_name = await db.fetchval("SELECT name FROM categories WHERE id = $1", category_id)
+        await create_user_notification_if_enabled(
+            db,
+            user_id,
+            'notif_budget_warning',
+            notif_type,
+            "Budget Awareness",
+            f"You've used 80% of your budget for {cat_name}. Looking good, stay mindful!",
+        )
 
     # 90% threshold
     if spent >= limit * 0.9 and spent < limit:
         notif_type = f"budget_90_{category_id}_{month}_{year}"
-        existing = await db.fetchrow("SELECT id FROM notifications WHERE user_id = $1 AND type = $2", user_id, notif_type)
-        if not existing:
-            cat_name = await db.fetchval("SELECT name FROM categories WHERE id = $1", category_id)
-            await create_notification(
-                db, user_id, notif_type,
-                "Budget Warning",
-                f"You've used over 90% of your budget for {cat_name} this month."
-            )
+        cat_name = await db.fetchval("SELECT name FROM categories WHERE id = $1", category_id)
+        await create_user_notification_if_enabled(
+            db,
+            user_id,
+            'notif_budget_warning',
+            notif_type,
+            "Budget Warning",
+            f"You've used over 90% of your budget for {cat_name} this month.",
+        )
 
     # 100% threshold
     if spent >= limit:
         notif_type = f"budget_100_{category_id}_{month}_{year}"
-        existing = await db.fetchrow("SELECT id FROM notifications WHERE user_id = $1 AND type = $2", user_id, notif_type)
-        if not existing:
-            cat_name = await db.fetchval("SELECT name FROM categories WHERE id = $1", category_id)
-            await create_notification(
-                db, user_id, notif_type,
-                "Budget Exceeded",
-                f"You've exceeded your monthly budget for {cat_name}!"
-            )
+        cat_name = await db.fetchval("SELECT name FROM categories WHERE id = $1", category_id)
+        await create_user_notification_if_enabled(
+            db,
+            user_id,
+            'notif_budget_exceeded',
+            notif_type,
+            "Budget Exceeded",
+            f"You've exceeded your monthly budget for {cat_name}!",
+        )
+
+
+async def check_spending_pattern_alerts(db: asyncpg.Connection, user_id: int, tx_date: date):
+    week_start = tx_date.fromordinal(tx_date.toordinal() - tx_date.weekday())
+    next_week = week_start.fromordinal(week_start.toordinal() + 7)
+    prev_week = week_start.fromordinal(week_start.toordinal() - 7)
+
+    current_total = await db.fetchval(
+        """
+        SELECT COALESCE(SUM(amount), 0)
+        FROM transactions
+        WHERE user_id = $1 AND type = 'expense' AND date >= $2 AND date < $3
+        """,
+        user_id,
+        week_start,
+        next_week,
+    )
+    previous_total = await db.fetchval(
+        """
+        SELECT COALESCE(SUM(amount), 0)
+        FROM transactions
+        WHERE user_id = $1 AND type = 'expense' AND date >= $2 AND date < $3
+        """,
+        user_id,
+        prev_week,
+        week_start,
+    )
+
+    current_total = float(current_total or 0)
+    previous_total = float(previous_total or 0)
+    if previous_total > 0 and current_total >= previous_total * 1.2:
+        await create_user_notification_if_enabled(
+            db,
+            user_id,
+            'notif_overspending',
+            f"weekly_spike_{week_start.isoformat()}",
+            "Overspending Alert",
+            "Spending is higher than usual this week.",
+        )
 
 @router.get("/summary")
 async def get_transactions_summary(
@@ -176,9 +243,21 @@ async def get_transactions(
             params.append(type)
             idx += 1
         if q:
-            query += f" AND (t.description ILIKE ${idx} OR t.merchant ILIKE ${idx})"
-            params.append(f"%{q}%")
-            idx += 1
+            terms = [term.strip() for term in q.split() if term.strip()]
+            for term in terms:
+                query += f"""
+                 AND (
+                   t.description ILIKE ${idx}
+                   OR t.merchant ILIKE ${idx}
+                   OR t.payment_method ILIKE ${idx}
+                   OR c.name ILIKE ${idx}
+                   OR t.type ILIKE ${idx}
+                   OR CAST(t.amount AS TEXT) ILIKE ${idx}
+                   OR TO_CHAR(t.date, 'YYYY-MM-DD') ILIKE ${idx}
+                 )
+                """
+                params.append(f"%{term}%")
+                idx += 1
 
         query += f" ORDER BY t.date DESC, t.created_at DESC LIMIT ${idx} OFFSET ${idx+1}"
         params.extend([limit, offset])
@@ -202,9 +281,24 @@ async def get_transactions(
             count_params.append(type)
             cidx += 1
         if q:
-            count_query += f" AND (t.description ILIKE ${cidx} OR t.merchant ILIKE ${cidx})"
-            count_params.append(f"%{q}%")
-            cidx += 1
+            terms = [term.strip() for term in q.split() if term.strip()]
+            for term in terms:
+                count_query += f"""
+                 AND (
+                   t.description ILIKE ${cidx}
+                   OR t.merchant ILIKE ${cidx}
+                   OR t.payment_method ILIKE ${cidx}
+                   OR EXISTS (
+                     SELECT 1 FROM categories c
+                     WHERE c.id = t.category_id AND c.name ILIKE ${cidx}
+                   )
+                   OR t.type ILIKE ${cidx}
+                   OR CAST(t.amount AS TEXT) ILIKE ${cidx}
+                   OR TO_CHAR(t.date, 'YYYY-MM-DD') ILIKE ${cidx}
+                 )
+                """
+                count_params.append(f"%{term}%")
+                cidx += 1
 
         count_record = await db.fetchrow(count_query, *count_params)
 
@@ -247,6 +341,7 @@ async def create_transaction(
         # Budget check if expense
         if tx.type == "expense":
             await check_budget_thresholds(db, current_user["id"], tx.category_id, tx.date)
+            await check_spending_pattern_alerts(db, current_user["id"], tx.date)
 
         # Milestone check (Consistency etc)
         await check_milestones_transaction(db, current_user["id"])
@@ -300,6 +395,11 @@ async def update_transaction(
                 current_user["id"], 
                 tx.category_id if tx.category_id is not None else full["category_id"],
                 tx.date if tx.date is not None else full["date"]
+            )
+            await check_spending_pattern_alerts(
+                db,
+                current_user["id"],
+                tx.date if tx.date is not None else full["date"],
             )
 
         # Milestone check (Consistency etc)

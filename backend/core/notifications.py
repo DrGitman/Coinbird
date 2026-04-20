@@ -8,20 +8,36 @@ async def create_notification(
     user_id: int,
     type: str,
     title: str,
-    message: str
+    message: str,
+    action_url: Optional[str] = None,
 ):
     """
     Internal utility to create a user notification and trigger a system push alert.
     """
     try:
+        existing = await db.fetchrow(
+            "SELECT id FROM notifications WHERE user_id = $1 AND type = $2",
+            user_id,
+            type,
+        )
+        if existing:
+            return
+
         # 1. Create database record
         await db.execute(
             """
-            INSERT INTO notifications (user_id, type, title, message, is_read, created_at)
-            VALUES ($1, $2, $3, $4, false, NOW())
+            INSERT INTO notifications (user_id, type, title, message, action_url, is_read, created_at)
+            VALUES ($1, $2, $3, $4, $5, false, NOW())
             """,
-            user_id, type, title, message
+            user_id, type, title, message, action_url
         )
+
+        user_settings = await db.fetchrow(
+            "SELECT COALESCE(notif_push, false) AS notif_push FROM users WHERE id = $1",
+            user_id,
+        )
+        if not user_settings or not user_settings["notif_push"]:
+            return
         
         # 2. Trigger Mobile/Desktop System Push
         subs = await db.fetch("SELECT endpoint, p256dh, auth FROM push_subscriptions WHERE user_id = $1", user_id)
@@ -30,7 +46,9 @@ async def create_notification(
             "title": title,
             "body": message,
             "icon": "/static/favicon.ico", # Default icon
-            "tag": type # Used for deduplication across tabs
+            "badge": "/static/favicon.ico",
+            "tag": type, # Used for deduplication across tabs
+            "url": action_url or "/notifications",
         }
 
         for s in subs:

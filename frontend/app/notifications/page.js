@@ -1,10 +1,12 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import AppShell from '../../components/layout/AppShell';
 import { api, formatDate } from '../../lib/api';
 import { Bell, Check, Trash2, Info, AlertTriangle, TrendingUp, TrendingDown, Inbox } from 'lucide-react';
 
 export default function NotificationsPage() {
+  const router = useRouter();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -43,21 +45,24 @@ export default function NotificationsPage() {
   };
 
   const getIcon = (type) => {
-    switch (type) {
-      case 'budget_exceeded': return <AlertTriangle size={18} />;
-      case 'income': return <TrendingUp size={18} />;
-      case 'expense': return <TrendingDown size={18} />;
-      default: return <Info size={18} />;
-    }
+    if (type.startsWith('budget_100')) return <AlertTriangle size={18} />;
+    if (type.startsWith('budget_80') || type.startsWith('budget_90')) return <Bell size={18} />;
+    if (type.startsWith('weekly_spike')) return <TrendingUp size={18} />;
+    if (type.startsWith('weekly_spending_lower')) return <TrendingDown size={18} />;
+    if (type.startsWith('weekly_reminder') || type.startsWith('monthly_summary')) return <Info size={18} />;
+    if (type.startsWith('badge_')) return <Check size={18} />;
+    if (type === 'income') return <TrendingUp size={18} />;
+    if (type === 'expense') return <TrendingDown size={18} />;
+    return <Info size={18} />;
   };
 
   const getIconColor = (type) => {
-    switch (type) {
-      case 'budget_exceeded': return 'var(--danger)';
-      case 'income': return 'var(--income-color)';
-      case 'expense': return 'var(--expense-color)';
-      default: return 'var(--accent)';
-    }
+    if (type.startsWith('budget_100') || type.startsWith('weekly_spike')) return 'var(--danger)';
+    if (type.startsWith('budget_80') || type.startsWith('budget_90')) return '#d97706';
+    if (type.startsWith('weekly_spending_lower') || type.startsWith('badge_')) return 'var(--income-color)';
+    if (type === 'income') return 'var(--income-color)';
+    if (type === 'expense') return 'var(--expense-color)';
+    return 'var(--accent)';
   };
 
   return (
@@ -87,7 +92,8 @@ export default function NotificationsPage() {
               <div key={n.id} className="card" style={{ 
                 padding: '16px 20px', display: 'flex', gap: 16, alignItems: 'flex-start',
                 opacity: n.is_read ? 0.7 : 1, transition: 'all 0.2s',
-                borderLeft: n.is_read ? '1px solid var(--border)' : `4px solid ${getIconColor(n.type)}`
+                borderLeft: n.is_read ? '1px solid var(--border)' : `4px solid ${getIconColor(n.type)}`,
+                cursor: n.action_url ? 'pointer' : 'default'
               }}>
                 <div style={{ 
                   width: 40, height: 40, borderRadius: 12, flexShrink: 0,
@@ -100,7 +106,12 @@ export default function NotificationsPage() {
                 
                 <div style={{ flex: 1 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                    <p style={{ fontWeight: 600, fontSize: 15, color: 'var(--text-primary)' }}>{n.title}</p>
+                    <p
+                      style={{ fontWeight: 600, fontSize: 15, color: 'var(--text-primary)' }}
+                      onClick={() => n.action_url && router.push(n.action_url)}
+                    >
+                      {n.title}
+                    </p>
                     <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{formatDate(n.created_at)}</span>
                   </div>
                   <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: 12 }}>{n.message}</p>

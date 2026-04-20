@@ -87,6 +87,12 @@ export default function AppShell({ children, title }) {
     const registerPush = async () => {
       try {
         const registration = await navigator.serviceWorker.register('/sw.js');
+        const existingSubscription = await registration.pushManager.getSubscription();
+        if (existingSubscription) {
+          await api.subscribePush(existingSubscription);
+          return;
+        }
+
         const permission = await Notification.requestPermission();
         if (permission !== 'granted') return;
 
@@ -102,6 +108,10 @@ export default function AppShell({ children, title }) {
     };
 
     window.__cb_register_sw = registerPush;
+
+    if (user?.notif_push) {
+      registerPush();
+    }
   }, [user]);
 
   if (loading || !user) {
@@ -159,7 +169,8 @@ export default function AppShell({ children, title }) {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
-                    router.push(`/transactions?q=${encodeURIComponent(searchQuery)}`);
+                    const trimmed = searchQuery.trim();
+                    router.push(trimmed ? `/transactions?q=${encodeURIComponent(trimmed)}` : '/transactions');
                   }
                 }}
                 style={{ 

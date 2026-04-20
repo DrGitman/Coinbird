@@ -43,7 +43,7 @@ export default function TransactionsPage() {
       setSummary(s);
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
-  }, [filters]);
+  }, [filters, searchParams]);
 
   useEffect(() => { load(); api.getCategories().then(setCategories); }, [load]);
 

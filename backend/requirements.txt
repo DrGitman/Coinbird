@@ -1,6 +1,7 @@
 fastapi
 uvicorn[standard]
 asyncpg
+apscheduler
 python-dotenv
 passlib[bcrypt]
 python-jose[cryptography]

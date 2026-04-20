@@ -3,6 +3,7 @@ from pydantic import BaseModel, Field
 from typing import Optional, List, Dict
 from core.security import get_current_user
 from db.database import get_db_connection
+from core.milestones import check_milestones_budget
 import asyncpg
 from datetime import datetime
 
@@ -68,6 +69,7 @@ async def create_update_budget(
             """,
             current_user["id"], budget.category_id, budget.monthly_limit, budget.month, budget.year
         )
+        await check_milestones_budget(db, current_user["id"])
         return dict(record)
     except Exception as e:
         print("Create budget error:", e)
