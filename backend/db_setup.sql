@@ -1,5 +1,5 @@
 -- ============================================================
--- COINBIRD - BOTANICAL LEDGER
+-- COINBIRD - BUDGET PLANNER
 -- Database Setup Guide
 -- ============================================================
 -- 
@@ -137,6 +137,55 @@ CREATE TRIGGER update_budgets_updated_at BEFORE UPDATE ON budgets
 
 CREATE TRIGGER update_savings_goals_updated_at BEFORE UPDATE ON savings_goals
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- Notifications Table
+CREATE TABLE IF NOT EXISTS notifications (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  type VARCHAR(100),
+  title VARCHAR(150),
+  message TEXT,
+  is_read BOOLEAN DEFAULT false,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TRIGGER update_notifications_updated_at BEFORE UPDATE ON notifications
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- Push Subscriptions Table
+CREATE TABLE IF NOT EXISTS push_subscriptions (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  endpoint TEXT UNIQUE NOT NULL,
+  p256dh VARCHAR(255) NOT NULL,
+  auth VARCHAR(255) NOT NULL,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TRIGGER update_push_subscriptions_updated_at BEFORE UPDATE ON push_subscriptions
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- Badges (Metadata)
+CREATE TABLE IF NOT EXISTS badges (
+  id SERIAL PRIMARY KEY,
+  badge_key VARCHAR(50) UNIQUE NOT NULL,
+  title VARCHAR(100) NOT NULL,
+  description TEXT,
+  icon VARCHAR(50),
+  category VARCHAR(50)
+);
+
+-- User Badges (Achievements)
+CREATE TABLE IF NOT EXISTS user_badges (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  badge_id INTEGER REFERENCES badges(id) ON DELETE CASCADE,
+  earned_at TIMESTAMP DEFAULT NOW(),
+  progress INTEGER DEFAULT 100,
+  UNIQUE(user_id, badge_id)
+);
 
 -- ============================================================
 -- VERIFY SETUP

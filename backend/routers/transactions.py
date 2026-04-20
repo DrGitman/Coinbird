@@ -4,6 +4,8 @@ from typing import Optional, List
 from datetime import date, datetime
 from core.security import get_current_user
 from db.database import get_db_connection
+from core.notifications import create_notification
+from core.milestones import check_milestones_transaction
 import asyncpg
 
 router = APIRouter(prefix="/transactions", tags=["transactions"])
@@ -16,6 +18,72 @@ class TransactionCreateUpdate(BaseModel):
     description: Optional[str] = None
     merchant: Optional[str] = None
     payment_method: Optional[str] = None
+
+async def check_budget_thresholds(db: asyncpg.Connection, user_id: int, category_id: int, tx_date: date):
+    if not category_id:
+        return
+
+    month = tx_date.month
+    year = tx_date.year
+
+    # 1. Fetch budget limit
+    budget = await db.fetchrow(
+        "SELECT monthly_limit FROM budgets WHERE user_id = $1 AND category_id = $2 AND month = $3 AND year = $4",
+        user_id, category_id, month, year
+    )
+    if not budget:
+        return
+
+    limit = float(budget["monthly_limit"])
+
+    # 2. Calculate total spent in this category for this month
+    spent_record = await db.fetchrow(
+        """
+        SELECT SUM(amount) as total FROM transactions
+        WHERE user_id = $1 AND category_id = $2 AND type = 'expense'
+          AND EXTRACT(MONTH FROM date) = $3 AND EXTRACT(YEAR FROM date) = $4
+        """,
+        user_id, category_id, month, year
+    )
+    spent = float(spent_record["total"] or 0)
+
+    # 3. Check thresholds (One-time notification per threshold/category/month)
+    
+    # 80% threshold
+    if spent >= limit * 0.8 and spent < limit * 0.9:
+        notif_type = f"budget_80_{category_id}_{month}_{year}"
+        existing = await db.fetchrow("SELECT id FROM notifications WHERE user_id = $1 AND type = $2", user_id, notif_type)
+        if not existing:
+            cat_name = await db.fetchval("SELECT name FROM categories WHERE id = $1", category_id)
+            await create_notification(
+                db, user_id, notif_type,
+                "Budget Awareness",
+                f"You've used 80% of your budget for {cat_name}. Looking good, stay mindful!"
+            )
+
+    # 90% threshold
+    if spent >= limit * 0.9 and spent < limit:
+        notif_type = f"budget_90_{category_id}_{month}_{year}"
+        existing = await db.fetchrow("SELECT id FROM notifications WHERE user_id = $1 AND type = $2", user_id, notif_type)
+        if not existing:
+            cat_name = await db.fetchval("SELECT name FROM categories WHERE id = $1", category_id)
+            await create_notification(
+                db, user_id, notif_type,
+                "Budget Warning",
+                f"You've used over 90% of your budget for {cat_name} this month."
+            )
+
+    # 100% threshold
+    if spent >= limit:
+        notif_type = f"budget_100_{category_id}_{month}_{year}"
+        existing = await db.fetchrow("SELECT id FROM notifications WHERE user_id = $1 AND type = $2", user_id, notif_type)
+        if not existing:
+            cat_name = await db.fetchval("SELECT name FROM categories WHERE id = $1", category_id)
+            await create_notification(
+                db, user_id, notif_type,
+                "Budget Exceeded",
+                f"You've exceeded your monthly budget for {cat_name}!"
+            )
 
 @router.get("/summary")
 async def get_transactions_summary(
@@ -79,6 +147,7 @@ async def get_transactions(
     year: Optional[int] = Query(None),
     category_id: Optional[int] = Query(None),
     type: Optional[str] = Query(None),
+    q: Optional[str] = Query(None),
     limit: int = Query(50),
     offset: int = Query(0),
     current_user: dict = Depends(get_current_user),
@@ -106,6 +175,10 @@ async def get_transactions(
             query += f" AND t.type = ${idx}"
             params.append(type)
             idx += 1
+        if q:
+            query += f" AND (t.description ILIKE ${idx} OR t.merchant ILIKE ${idx})"
+            params.append(f"%{q}%")
+            idx += 1
 
         query += f" ORDER BY t.date DESC, t.created_at DESC LIMIT ${idx} OFFSET ${idx+1}"
         params.extend([limit, offset])
@@ -127,6 +200,10 @@ async def get_transactions(
         if type:
             count_query += f" AND t.type = ${cidx}"
             count_params.append(type)
+            cidx += 1
+        if q:
+            count_query += f" AND (t.description ILIKE ${cidx} OR t.merchant ILIKE ${cidx})"
+            count_params.append(f"%{q}%")
             cidx += 1
 
         count_record = await db.fetchrow(count_query, *count_params)
@@ -166,6 +243,14 @@ async def create_transaction(
             """,
             record["id"]
         )
+        
+        # Budget check if expense
+        if tx.type == "expense":
+            await check_budget_thresholds(db, current_user["id"], tx.category_id, tx.date)
+
+        # Milestone check (Consistency etc)
+        await check_milestones_transaction(db, current_user["id"])
+
         return dict(full)
     except Exception as e:
         print("Create transaction error:", e)
@@ -206,6 +291,20 @@ async def update_transaction(
             """,
             record["id"]
         )
+
+        # Budget check if expense
+        if tx.type == "expense" or (tx.type is None and full["type"] == "expense"):
+            # We use the updated or existing values
+            await check_budget_thresholds(
+                db, 
+                current_user["id"], 
+                tx.category_id if tx.category_id is not None else full["category_id"],
+                tx.date if tx.date is not None else full["date"]
+            )
+
+        # Milestone check (Consistency etc)
+        await check_milestones_transaction(db, current_user["id"])
+
         return dict(full)
     except HTTPException:
         raise

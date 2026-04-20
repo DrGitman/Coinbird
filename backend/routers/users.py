@@ -168,7 +168,10 @@ async def upload_avatar(
         # Create unique filename
         ext = os.path.splitext(file.filename)[1]
         filename = f"{uuid.uuid4()}{ext}"
-        save_path = os.path.join("backend", "static", "avatars", filename)
+        
+        # Determine base directory (backend/)
+        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        save_path = os.path.join(base_dir, "static", "avatars", filename)
         
         # Ensure directories exist
         os.makedirs(os.path.dirname(save_path), exist_ok=True)

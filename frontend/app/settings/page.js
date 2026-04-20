@@ -166,6 +166,28 @@ export default function SettingsPage() {
                 </label>
               </div>
             </div>
+
+            <div style={{ display: 'flex', gap: 16, padding: '20px', borderRadius: 16, background: 'var(--bg-primary)', border: '1px solid var(--border)' }}>
+              <div style={{ width: 40, height: 40, borderRadius: 12, background: 'var(--accent-light)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Zap size={20} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <p style={{ fontWeight: 600, fontSize: 15, marginBottom: 2 }}>Browser Notifications</p>
+                <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12 }}>Receive real-time alerts on your desktop or mobile.</p>
+                <label className="toggle">
+                  <input type="checkbox" checked={settings.notif_push} onChange={async (e) => {
+                    const checked = e.target.checked;
+                    set('notif_push', checked);
+                    if (checked) {
+                      window.dispatchEvent(new CustomEvent('coinbird-push-on'));
+                    } else {
+                      window.dispatchEvent(new CustomEvent('coinbird-push-off'));
+                    }
+                  }} />
+                  <span className="toggle-slider"></span>
+                </label>
+              </div>
+            </div>
           </div>
         </div>
 

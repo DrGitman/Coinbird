@@ -17,6 +17,14 @@ class NotificationResponse(BaseModel):
     is_read: bool
     created_at: datetime
 
+class PushSubscriptionKeys(BaseModel):
+    p256dh: str
+    auth: str
+
+class PushSubscriptionSchema(BaseModel):
+    endpoint: str
+    keys: PushSubscriptionKeys
+
 @router.get("", response_model=List[NotificationResponse])
 async def get_notifications(
     current_user: dict = Depends(get_current_user),
@@ -32,6 +40,46 @@ async def get_notifications(
     except Exception as e:
         print("Get notifications error:", e)
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Server error.")
+
+@router.post("/subscribe")
+async def subscribe_push(
+    sub: PushSubscriptionSchema,
+    current_user: dict = Depends(get_current_user),
+    db: asyncpg.Connection = Depends(get_db_connection)
+):
+    try:
+        await db.execute(
+            """
+            INSERT INTO push_subscriptions (user_id, endpoint, p256dh, auth)
+            VALUES ($1, $2, $3, $4)
+            ON CONFLICT (endpoint) DO UPDATE SET
+                user_id = EXCLUDED.user_id,
+                p256dh = EXCLUDED.p256dh,
+                auth = EXCLUDED.auth,
+                updated_at = NOW()
+            """,
+            current_user["id"], sub.endpoint, sub.keys.p256dh, sub.keys.auth
+        )
+        return {"message": "Subscribed to push notifications."}
+    except Exception as e:
+        print("Subscribe error:", e)
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to subscribe.")
+
+@router.post("/unsubscribe")
+async def unsubscribe_push(
+    endpoint: str,
+    current_user: dict = Depends(get_current_user),
+    db: asyncpg.Connection = Depends(get_db_connection)
+):
+    try:
+        await db.execute(
+            "DELETE FROM push_subscriptions WHERE endpoint = $1 AND user_id = $2",
+            endpoint, current_user["id"]
+        )
+        return {"message": "Unsubscribed from push notifications."}
+    except Exception as e:
+        print("Unsubscribe error:", e)
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to unsubscribe.")
 
 @router.put("/{id}/read")
 async def mark_as_read(

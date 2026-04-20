@@ -1,10 +1,11 @@
 'use client';
 import { useState, useRef } from 'react';
 import AppShell from '../../components/layout/AppShell';
-import { api } from '../../lib/api';
+import { api, API_URL } from '../../lib/api';
 import { useAuth } from '../../lib/AuthContext';
 import { Mail, User, Shield, Camera, Check, Sprout, Lock, Calendar } from 'lucide-react';
 import PasswordChangeModal from '../../components/ui/PasswordChangeModal';
+import MilestonesSection from '../../components/ui/MilestonesSection';
 
 export default function ProfilePage() {
   const { user, updateUser } = useAuth();
@@ -70,7 +71,11 @@ export default function ProfilePage() {
                 overflow: 'hidden', flexShrink: 0, cursor: 'pointer', position: 'relative'
               }}>
               {user?.avatar_url
-                ? <img src={user.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ? <img 
+                    src={user.avatar_url.startsWith('http') ? user.avatar_url : `${API_URL}${user.avatar_url}`} 
+                    alt="" 
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                  />
                 : initials}
               <div style={{
                 position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.3)',
@@ -187,6 +192,8 @@ export default function ProfilePage() {
             </div>
           </div>
         </div>
+
+        <MilestonesSection />
       </div>
 
       {showPasswordModal && <PasswordChangeModal onClose={() => setShowPasswordModal(false)} />}

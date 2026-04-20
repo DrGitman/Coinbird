@@ -1,46 +1,50 @@
 import asyncio
-from core.config import settings
-from core.security import get_password_hash
 import asyncpg
 import os
 from dotenv import load_dotenv
+from decimal import Decimal
+from datetime import date
 
-async def test_register():
+async def diagnostic():
     load_dotenv()
-    db_url = os.environ.get("DATABASE_URL")
-    print(f"Connecting to: {db_url}")
-    try:
-        db = await asyncpg.connect(db_url)
-        print("Connected.")
+    db_url = os.getenv("DATABASE_URL")
+    if not db_url:
+        print("DATABASE_URL not found in .env")
+        return
         
-        async with db.transaction():
-            name = "Test User"
-            email = "test@example.com"
-            password = "password123"
+    db = await asyncpg.connect(db_url)
+    
+    try:
+        # 1. Get all users
+        users = await db.fetch("SELECT id, name FROM users")
+        print(f"--- Users ({len(users)}) ---")
+        for u in users:
+            print(f"ID: {u['id']}, Name: {u['name']}")
             
-            print(f"Hashing password...")
-            password_hash = get_password_hash(password)
+        # 2. Check Budgets
+        budgets = await db.fetch("SELECT * FROM budgets")
+        print(f"\n--- Budgets ({len(budgets)}) ---")
+        for b in budgets:
+            print(f"User: {b['user_id']}, Cat: {b['category_id']}, Limit: {b['monthly_limit']}, Month: {b['month']}, Year: {b['year']}")
             
-            print(f"Inserting user...")
-            result = await db.fetchrow(
-                """
-                INSERT INTO users (name, email, password_hash) 
-                VALUES ($1, $2, $3) 
-                RETURNING id, name, email
-                """,
-                name, email, password_hash
-            )
-            print(f"User created: {dict(result)}")
+        # 3. Check Transactions for current month
+        today = date.today()
+        txs = await db.fetch(
+            "SELECT user_id, category_id, SUM(amount) as total FROM transactions WHERE type='expense' AND EXTRACT(MONTH FROM date) = $1 AND EXTRACT(YEAR FROM date) = $2 GROUP BY user_id, category_id",
+            today.month, today.year
+        )
+        print(f"\n--- Current Month Spending by User/Cat ---")
+        for t in txs:
+            print(f"User: {t['user_id']}, Cat: {t['category_id']}, Spent: {t['total']}")
             
-            # Clean up
-            await db.execute("DELETE FROM users WHERE email = $1", email)
-            print("Cleanup done.")
+        # 4. Check Notifications
+        notifs = await db.fetch("SELECT * FROM notifications ORDER BY created_at DESC LIMIT 10")
+        print(f"\n--- Recent Notifications ({len(notifs)}) ---")
+        for n in notifs:
+            print(f"User: {n['user_id']}, Type: {n['type']}, Read: {n['is_read']}, Title: {n['title']}")
             
+    finally:
         await db.close()
-    except Exception as e:
-        print(f"ERROR: {type(e).__name__}: {e}")
-        import traceback
-        traceback.print_exc()
 
 if __name__ == "__main__":
-    asyncio.run(test_register())
+    asyncio.run(diagnostic())

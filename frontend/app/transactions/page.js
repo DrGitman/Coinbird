@@ -30,6 +30,10 @@ export default function TransactionsPage() {
       const params = {};
       if (filters.type) params.type = filters.type;
       if (filters.category_id) params.category_id = filters.category_id;
+      
+      const q = searchParams.get('q');
+      if (q) params.q = q;
+
       const [t, s] = await Promise.all([
         api.getTransactions({ ...params, limit: 100 }),
         api.getTransactionSummary({ month: now.getMonth() + 1, year: now.getFullYear() }),

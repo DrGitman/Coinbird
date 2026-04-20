@@ -1,4 +1,4 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+export const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 function getToken() {
   if (typeof window === 'undefined') return null;
@@ -107,6 +107,12 @@ export const api = {
     request(`/users/savings-goals/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteSavingsGoal: (id) =>
     request(`/users/savings-goals/${id}`, { method: 'DELETE' }),
+
+  subscribePush: (subscription) =>
+    request('/notifications/subscribe', { method: 'POST', body: JSON.stringify(subscription) }),
+  unsubscribePush: (endpoint) =>
+    request('/notifications/unsubscribe', { method: 'POST', body: JSON.stringify({ endpoint }) }),
+  getMilestones: () => request('/milestones'),
 };
 
 export function formatCurrency(amount, currency = 'USD') {

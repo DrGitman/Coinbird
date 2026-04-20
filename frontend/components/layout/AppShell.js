@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '../../lib/AuthContext';
 import Sidebar from './Sidebar';
 import { Menu, Sprout, Search, Bell, Settings as SettingsIcon } from 'lucide-react';
+import { api, API_URL } from '../../lib/api';
 import Image from 'next/image';
 import logoSquare from '../../app/assets/images/logo.png';
 
@@ -11,6 +12,50 @@ export default function AppShell({ children, title }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { user, loading } = useAuth();
   const router = useRouter();
+  const [hasUnread, setHasUnread] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  useEffect(() => {
+    if (!user) return;
+
+    const checkNotifs = () => {
+      api.getNotifications()
+        .then(notifs => {
+          setHasUnread(notifs.some(n => !n.is_read));
+        })
+        .catch(err => console.error('Failed to fetch notifications:', err));
+    };
+
+    checkNotifs();
+    const interval = setInterval(checkNotifs, 30000); // 30s polling
+
+    const handlePushOn = () => {
+      // Look for the registration function defined below this effect
+      window.__cb_register_sw && window.__cb_register_sw();
+    };
+
+    const handlePushOff = async () => {
+      try {
+        const registration = await navigator.serviceWorker.ready;
+        const subscription = await registration.pushManager.getSubscription();
+        if (subscription) {
+          await subscription.unsubscribe();
+          await api.unsubscribePush(subscription.endpoint);
+        }
+      } catch (err) {
+        console.error('Failed to unsubscribe push:', err);
+      }
+    };
+
+    window.addEventListener('coinbird-push-on', handlePushOn);
+    window.addEventListener('coinbird-push-off', handlePushOff);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('coinbird-push-on', handlePushOn);
+      window.removeEventListener('coinbird-push-off', handlePushOff);
+    };
+  }, [user]);
 
   useEffect(() => {
     if (!loading && !user) router.replace('/login');
@@ -23,6 +68,41 @@ export default function AppShell({ children, title }) {
       document.documentElement.classList.remove('dark');
     }
   }, [user?.theme]);
+
+  // Web Push & Service Worker Registration
+  useEffect(() => {
+    if (!user || typeof window === 'undefined' || !('serviceWorker' in navigator) || !('PushManager' in window)) return;
+
+    const VAPID_PUBLIC_KEY = 'BMf0a98-YCTujALsjBg6udJs1il-uJ69EKLKP7Vz3KvOg77twXXDzuXnYw1YyD-qoDdgde2zNSYfYO_f_k7ykWqA';
+
+    function urlBase64ToUint8Array(base64String) {
+      const padding = '='.repeat((4 - base64String.length % 4) % 4);
+      const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
+      const rawData = window.atob(base64);
+      const outputArray = new Uint8Array(rawData.length);
+      for (let i = 0; i < rawData.length; ++i) outputArray[i] = rawData.charCodeAt(i);
+      return outputArray;
+    }
+
+    const registerPush = async () => {
+      try {
+        const registration = await navigator.serviceWorker.register('/sw.js');
+        const permission = await Notification.requestPermission();
+        if (permission !== 'granted') return;
+
+        const subscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+        });
+
+        await api.subscribePush(subscription);
+      } catch (err) {
+        console.error('Push registration error:', err);
+      }
+    };
+
+    window.__cb_register_sw = registerPush;
+  }, [user]);
 
   if (loading || !user) {
     return (
@@ -74,7 +154,14 @@ export default function AppShell({ children, title }) {
               <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
               <input 
                 type="text" 
-                placeholder="Search transactions, insights..." 
+                placeholder="Search transactions, insights..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    router.push(`/transactions?q=${encodeURIComponent(searchQuery)}`);
+                  }
+                }}
                 style={{ 
                   width: '100%', 
                   background: 'var(--bg-secondary)', 
@@ -90,8 +177,17 @@ export default function AppShell({ children, title }) {
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, width: 220, justifyContent: 'flex-end' }}>
-            <button style={{ background: 'none', border: 'none', padding: 8, color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+            <button 
+              onClick={() => router.push('/notifications')}
+              style={{ background: 'none', border: 'none', padding: 8, color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', position: 'relative' }}>
               <Bell size={20} />
+              {hasUnread && (
+                <span style={{ 
+                  position: 'absolute', top: 6, right: 6, 
+                  width: 9, height: 9, borderRadius: '50%', 
+                  background: '#22c55e', border: '2px solid var(--bg-card)' 
+                }} />
+              )}
             </button>
             <button 
               onClick={() => router.push('/settings')}
@@ -107,7 +203,11 @@ export default function AppShell({ children, title }) {
                 fontSize: 16, cursor: 'pointer', marginLeft: 4, overflow: 'hidden'
               }}>
               {user?.avatar_url
-                ? <img src={user.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ? <img 
+                    src={user.avatar_url.startsWith('http') ? user.avatar_url : `${API_URL}${user.avatar_url}`} 
+                    alt="" 
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                  />
                 : <Sprout size={18} className="text-[var(--accent)]" />}
             </div>
           </div>

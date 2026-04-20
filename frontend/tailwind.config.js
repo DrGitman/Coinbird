@@ -9,7 +9,7 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // Light theme - Botanical Ledger
+        // Light theme - Budget Planner
         forest: {
           50:  '#f0fdf4',
           100: '#dcfce7',
