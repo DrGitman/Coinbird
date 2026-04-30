@@ -1,5 +1,6 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { api } from '../../lib/api';
 import { X, Lock, Check, ShieldAlert } from 'lucide-react';
 
@@ -40,8 +41,13 @@ export default function PasswordChangeModal({ onClose }) {
     }
   };
 
-  return (
-    <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
+  if (!mounted) return null;
+
+  return createPortal(
+    <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()} style={{ zIndex: 9999 }}>
       <div className="modal-box" style={{ maxWidth: 400 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
           <h3 style={{ fontFamily: 'DM Serif Display, serif', fontSize: 20 }}>Change Password</h3>
@@ -134,6 +140,7 @@ export default function PasswordChangeModal({ onClose }) {
           </form>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

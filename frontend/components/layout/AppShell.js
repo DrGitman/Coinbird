@@ -64,8 +64,10 @@ export default function AppShell({ children, title }) {
   useEffect(() => {
     if (user?.theme === 'dark') {
       document.documentElement.classList.add('dark');
+      localStorage.setItem('coinbird_user_theme', 'dark');
     } else {
       document.documentElement.classList.remove('dark');
+      localStorage.setItem('coinbird_user_theme', 'light');
     }
   }, [user?.theme]);
 
@@ -225,7 +227,12 @@ export default function AppShell({ children, title }) {
         </header>
 
         {/* Main scroll area */}
-        <main style={{ flex: 1, overflow: 'auto', padding: '28px' }}>
+        <main style={{
+          flex: 1,
+          overflow: 'auto',
+          padding: '28px',
+          animation: 'pageIn 0.25s ease-out both',
+        }}>
           {children}
         </main>
       </div>
